@@ -5,281 +5,286 @@ namespace GetResponse;
 /**
  * GetResponse API v3 client library
  *
- * @author Pawel Maslak <pawel.maslak@getresponse.com>
- * @author Grzegorz Struczynski <grzegorz.struczynski@implix.com>
- *
  * @see http://apidocs.getresponse.com/en/v3/resources
- * @see https://github.com/GetResponse/getresponse-api-php
  */
 class GetResponse
 {
+    /*
+     * Methods
+     */
+    const METHOD_GET = 'GET';
+    const METHOD_POST = 'POST';
+    const METHOD_DELETE = 'DELETE';
 
-    private $api_key;
-    private $api_url = 'https://api.getresponse.com/v3';
+    private $apiKey;
+    private $endpoint = 'https://api.getresponse.com/v3';
     private $timeout = 8;
-    public $http_status;
 
     /**
      * X-Domain header value if empty header will be not provided
+     *
      * @var string|null
      */
-    private $enterprise_domain = null;
+    private $domain = null;
 
     /**
      * X-APP-ID header value if empty header will be not provided
+     *
      * @var string|null
      */
-    private $app_id = null;
+    private $appId = null;
 
     /**
-     * Set api key and optionally API endpoint
-     * @param      $api_key
-     * @param null $api_url
+     * Set api key and other options
+     *
+     * @param string $apiKey
+     * @param array $options
      */
-    public function __construct($api_key, $api_url = null)
+    public function __construct($apiKey, array $options = [])
     {
-        $this->api_key = $api_key;
+        $this->apiKey = $apiKey;
 
-        if (!empty($api_url)) {
-            $this->api_url = $api_url;
+        if (isset($options['endpoint']) && $options['endpoint']) {
+            $this->endpoint = $options['endpoint'];
+        }
+
+        if (isset($options['domain']) && $options['domain']) {
+            $this->domain = $options['domain'];
+        }
+
+        if (isset($options['app_id']) && $options['app_id']) {
+            $this->appId = $options['app_id'];
+        }
+
+        if (isset($options['timeout']) && $options['timeout']) {
+            $this->timeout = $options['timeout'];
         }
     }
 
     /**
-     * We can modify internal settings
-     * @param $key
-     * @param $value
-     */
-    function __set($key, $value)
-    {
-        $this->{$key} = $value;
-    }
-
-    /**
-     * get account details
+     * Get account details
      *
-     * @return mixed
+     * @return array
      */
-    public function accounts()
+    public function getAccounts()
     {
         return $this->call('accounts');
     }
 
     /**
-     * @return mixed
-     */
-    public function ping()
-    {
-        return $this->accounts();
-    }
-
-    /**
      * Return all campaigns
-     * @param $params
-     * @return mixed
-     */
-    public function getCampaigns($params = array())
-    {
-        return $this->call('campaigns?' . $this->setParams($params));
-    }
-
-    /**
-     * get single campaign
-     * @param string $campaign_id retrieved using API
-     * @return mixed
-     */
-    public function getCampaign($campaign_id)
-    {
-        return $this->call('campaigns/' . $campaign_id);
-    }
-
-    /**
-     * adding campaign
-     * @param $params
-     * @return mixed
-     */
-    public function createCampaign($params)
-    {
-        return $this->call('campaigns', 'POST', $params);
-    }
-
-    /**
-     * list all RSS newsletters
-     * @return mixed
-     */
-    public function getRSSNewsletters()
-    {
-        $this->call('rss-newsletters', 'GET', null);
-    }
-
-    /**
-     * send one newsletter
      *
-     * @param $params
-     * @return mixed
-     */
-    public function sendNewsletter($params)
-    {
-        return $this->call('newsletters', 'POST', $params);
-    }
-
-    /**
-     * @param $params
-     * @return mixed
-     */
-    public function sendDraftNewsletter($params)
-    {
-        return $this->call('newsletters/send-draft', 'POST', $params);
-    }
-
-    /**
-     * add single contact into your campaign
-     *
-     * @param $params
-     * @return mixed
-     */
-    public function addContact($params)
-    {
-        return $this->call('contacts', 'POST', $params);
-    }
-
-    /**
-     * retrieving contact by id
-     *
-     * @param string $contact_id - contact id obtained by API
-     * @return mixed
-     */
-    public function getContact($contact_id)
-    {
-        return $this->call('contacts/' . $contact_id);
-    }
-
-
-    /**
-     * search contacts
-     *
-     * @param $params
-     * @return mixed
-     */
-    public function searchContacts($params = null)
-    {
-        return $this->call('search-contacts?' . $this->setParams($params));
-    }
-
-    /**
-     * retrieve segment
-     *
-     * @param $id
-     * @return mixed
-     */
-    public function getContactsSearch($id)
-    {
-        return $this->call('search-contacts/' . $id);
-    }
-
-    /**
-     * add contacts search
-     *
-     * @param $params
-     * @return mixed
-     */
-    public function addContactsSearch($params)
-    {
-        return $this->call('search-contacts/', 'POST', $params);
-    }
-
-    /**
-     * add contacts search
-     *
-     * @param $id
-     * @return mixed
-     */
-    public function deleteContactsSearch($id)
-    {
-        return $this->call('search-contacts/' . $id, 'DELETE');
-    }
-
-    /**
-     * get contact activities
-     * @param $contact_id
-     * @return mixed
-     */
-    public function getContactActivities($contact_id)
-    {
-        return $this->call('contacts/' . $contact_id . '/activities');
-    }
-
-    /**
-     * retrieving contact by params
      * @param array $params
-     *
-     * @return mixed
+     * @return array
      */
-    public function getContacts($params = array())
+    public function getCampaigns(array $params = array())
     {
-        return $this->call('contacts?' . $this->setParams($params));
+        return $this->call('campaigns', self::METHOD_GET, $params);
     }
 
     /**
-     * updating any fields of your subscriber (without email of course)
-     * @param       $contact_id
+     * Get single campaign
+     *
+     * @param int $campaignId - retrieved using API
+     * @return array
+     */
+    public function getCampaign($campaignId)
+    {
+        return $this->call('campaigns/' . $campaignId);
+    }
+
+    /**
+     * Add campaign
+     *
      * @param array $params
-     *
-     * @return mixed
+     * @return array
      */
-    public function updateContact($contact_id, $params = array())
+    public function createCampaign(array $params)
     {
-        return $this->call('contacts/' . $contact_id, 'POST', $params);
+        return $this->call('campaigns', self::METHOD_POST, $params);
     }
 
     /**
-     * drop single user by ID
+     * List all RSS newsletters
      *
-     * @param string $contact_id - obtained by API
-     * @return mixed
-     */
-    public function deleteContact($contact_id)
-    {
-        return $this->call('contacts/' . $contact_id, 'DELETE');
-    }
-
-    /**
-     * retrieve account custom fields
      * @param array $params
-     *
-     * @return mixed
+     * @return array
      */
-    public function getCustomFields($params = array())
+    public function getRssNewsletters(array $params)
     {
-        return $this->call('custom-fields?' . $this->setParams($params));
+        $this->call('rss-newsletters', self::METHOD_GET, $params);
     }
 
     /**
-     * add custom field
+     * Send one newsletter
+     *
+     * @param array $params
+     * @return array
+     */
+    public function sendNewsletter(array $params)
+    {
+        return $this->call('newsletters', self::METHOD_POST, $params);
+    }
+
+    /**
+     * Add draft of a newsletter
+     *
+     * @param array $params
+     * @return array
+     */
+    public function sendDraftNewsletter(array $params)
+    {
+        return $this->call('newsletters/send-draft', self::METHOD_POST, $params);
+    }
+
+    /**
+     * Add single contact into your campaign
+     *
+     * @param array $params
+     * @return array
+     */
+    public function addContact(array $params)
+    {
+        return $this->call('contacts', self::METHOD_POST, $params);
+    }
+
+    /**
+     * Retrieving contact by id
+     *
+     * @param string $contactId - contact id obtained by API
+     * @return array
+     */
+    public function getContact($contactId)
+    {
+        return $this->call('contacts/' . $contactId);
+    }
+
+    /**
+     * Search contacts
      *
      * @param $params
-     * @return mixed
+     * @return array
      */
-    public function setCustomField($params)
+    public function searchContacts(array $params = array())
     {
-        return $this->call('custom-fields', 'POST', $params);
+        return $this->call('search-contacts', self::METHOD_GET, $params);
     }
 
     /**
-     * retrieve single custom field
+     * Retrieve segment
      *
-     * @param string $cs_id obtained by API
-     * @return mixed
+     * @param int $contactId
+     * @return array
      */
-    public function getCustomField($custom_id)
+    public function getContactsSearch($contactId)
     {
-        return $this->call('custom-fields/' . $custom_id, 'GET');
+        return $this->call('search-contacts/' . $contactId);
     }
 
     /**
-     * retrieving billing information
+     * Add contacts search
      *
-     * @return mixed
+     * @param $params
+     * @return array
+     */
+    public function addContactsSearch(array $params)
+    {
+        return $this->call('search-contacts/', self::METHOD_POST, $params);
+    }
+
+    /**
+     * Delete contacts search
+     *
+     * @param int $contactId
+     * @return array
+     */
+    public function deleteContactsSearch($contactId)
+    {
+        return $this->call('search-contacts/' . $contactId, self::METHOD_DELETE);
+    }
+
+    /**
+     * Get contact activities
+     *
+     * @param int $contactId
+     * @return array
+     */
+    public function getContactActivities($contactId)
+    {
+        return $this->call('contacts/' . $contactId . '/activities');
+    }
+
+    /**
+     * Retrieving contact by params
+     *
+     * @param array $params
+     * @return array
+     */
+    public function getContacts(array $params = array())
+    {
+        return $this->call('contacts', self::METHOD_GET, $params);
+    }
+
+    /**
+     * Updating any fields of your subscriber (without email of course)
+     *
+     * @param int $contactId
+     * @param array $params
+     * @return array
+     */
+    public function updateContact($contactId, array $params = array())
+    {
+        return $this->call('contacts/' . $contactId, self::METHOD_POST, $params);
+    }
+
+    /**
+     * Drop single contact by ID
+     *
+     * @param string $contactId - obtained by API
+     * @return array
+     */
+    public function deleteContact($contactId)
+    {
+        return $this->call('contacts/' . $contactId, self::METHOD_DELETE);
+    }
+
+    /**
+     * Retrieve account custom fields
+     *
+     * @param array $params
+     * @return array
+     */
+    public function getCustomFields(array $params = array())
+    {
+        return $this->call('custom-fields', self::METHOD_GET, $params);
+    }
+
+    /**
+     * Add custom field
+     *
+     * @param $params
+     * @return array
+     */
+    public function setCustomField(array $params)
+    {
+        return $this->call('custom-fields', self::METHOD_POST, $params);
+    }
+
+    /**
+     * Retrieve single custom field
+     *
+     * @param int $customFieldId - obtained by API
+     * @return array
+     */
+    public function getCustomField($customFieldId)
+    {
+        return $this->call('custom-fields/' . $customFieldId);
+    }
+
+    /**
+     * Retrieving billing information
+     *
+     * @return array
      */
     public function getBillingInfo()
     {
@@ -287,62 +292,62 @@ class GetResponse
     }
 
     /**
-     * get single web form
+     * Get single web form
      *
-     * @param int $w_id
-     * @return mixed
+     * @param int $webFormId
+     * @return array
      */
-    public function getWebForm($w_id)
+    public function getWebForm($webFormId)
     {
-        return $this->call('webforms/' . $w_id);
+        return $this->call('webforms/' . $webFormId);
     }
 
     /**
-     * retrieve all webforms
+     * Retrieve all webforms
+     *
      * @param array $params
-     *
-     * @return mixed
+     * @return array
      */
-    public function getWebForms($params = array())
+    public function getWebForms(array $params = array())
     {
-        return $this->call('webforms?' . $this->setParams($params));
+        return $this->call('webforms', self::METHOD_GET, $params);
     }
 
     /**
-     * get single form
+     * Get single form
      *
-     * @param int $form_id
-     * @return mixed
+     * @param int $formId
+     * @return array
      */
-    public function getForm($form_id)
+    public function getForm($formId)
     {
-        return $this->call('forms/' . $form_id);
+        return $this->call('forms/' . $formId);
     }
 
     /**
-     * retrieve all forms
+     * Retrieve all forms
+     *
      * @param array $params
-     *
-     * @return mixed
+     * @return array
      */
-    public function getForms($params = array())
+    public function getForms(array $params = array())
     {
-        return $this->call('forms?' . $this->setParams($params));
+        return $this->call('forms', self::METHOD_GET, $params);
     }
 
     /**
      * Curl run request
      *
-     * @param null $api_method
-     * @param string $http_method
+     * @param string $apiMethod
+     * @param string $httpMethod
      * @param array $params
-     * @return mixed
+     * @return array
      * @throws Exception
      */
-    private function call($api_method = null, $http_method = 'GET', $params = array())
+    private function call($apiMethod = null, $httpMethod = self::METHOD_GET, array $params = array())
     {
-        if (empty($api_method)) {
-            return (object)array(
+        if (empty($apiMethod)) {
+            return array(
                 'httpStatus' => '400',
                 'code' => '1010',
                 'codeDescription' => 'Error in external resources',
@@ -350,8 +355,11 @@ class GetResponse
             );
         }
 
-        $params = json_encode($params);
-        $url = $this->api_url . '/' . $api_method;
+        $url = $this->endpoint . '/' . $apiMethod;
+
+        if ($httpMethod == self::METHOD_GET && $params) {
+            $url .= '?'. urldecode(http_build_query($params));
+        }
 
         $options = array(
             CURLOPT_URL => $url,
@@ -360,50 +368,38 @@ class GetResponse
             CURLOPT_RETURNTRANSFER => 1,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_HEADER => false,
-            CURLOPT_USERAGENT => 'PHP GetResponse client 0.0.2',
-            CURLOPT_HTTPHEADER => array('X-Auth-Token: api-key ' . $this->api_key, 'Content-Type: application/json')
+            CURLOPT_USERAGENT => 'PHP GetResponse client',
+            CURLOPT_HTTPHEADER => array(
+                'X-Auth-Token: api-key ' . $this->apiKey,
+                'Content-Type: application/json'
+            )
         );
 
-        if (!empty($this->enterprise_domain)) {
-            $options[CURLOPT_HTTPHEADER][] = 'X-Domain: ' . $this->enterprise_domain;
+        if (!empty($this->domain)) {
+            $options[CURLOPT_HTTPHEADER][] = 'X-Domain: ' . $this->domain;
         }
 
-        if (!empty($this->app_id)) {
-            $options[CURLOPT_HTTPHEADER][] = 'X-APP-ID: ' . $this->app_id;
+        if (!empty($this->appId)) {
+            $options[CURLOPT_HTTPHEADER][] = 'X-APP-ID: ' . $this->appId;
         }
 
-        if ($http_method == 'POST') {
+        if ($httpMethod == self::METHOD_POST) {
             $options[CURLOPT_POST] = 1;
-            $options[CURLOPT_POSTFIELDS] = $params;
-        } else if ($http_method == 'DELETE') {
-            $options[CURLOPT_CUSTOMREQUEST] = 'DELETE';
+            $options[CURLOPT_POSTFIELDS] = json_encode($params);
+        } else if ($httpMethod == self::METHOD_DELETE) {
+            $options[CURLOPT_CUSTOMREQUEST] = $httpMethod;
         }
 
         $curl = curl_init();
+
         curl_setopt_array($curl, $options);
 
-        $response = json_decode(curl_exec($curl));
+        $response = json_decode(curl_exec($curl), true);
 
         $this->http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
         curl_close($curl);
-        return (object)$response;
-    }
 
-    /**
-     * @param array $params
-     *
-     * @return string
-     */
-    private function setParams($params = array())
-    {
-        $result = array();
-        if (is_array($params)) {
-            foreach ($params as $key => $value) {
-                $result[$key] = $value;
-            }
-        }
-        return http_build_query($result);
+        return $response;
     }
-
 }
